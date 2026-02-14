@@ -109,4 +109,4 @@ The system is designed for RTO ≤ 10 minutes and RPO ≤ 1 minute.
 - Disaster Recovery: Standby region ready with DNS failover  
 - Data Protection: Backups + cross-region replication  
 - Infrastructure as Code: CloudFormation templates  
-- Automation & Observability: CloudWatch + Route 53 health checks  
+- Automation & Observability: Route 53 health checks  
