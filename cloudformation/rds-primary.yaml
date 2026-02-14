@@ -1,0 +1,21 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Resources:
+  PrimaryDB:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBName: drdb
+      Engine: mysql
+      DBInstanceClass: db.t3.micro
+      AllocatedStorage: 20
+      MasterUsername: admin
+      MasterUserPassword: Password123!
+      BackupRetentionPeriod: 7
+      MultiAZ: true
+      PubliclyAccessible: false
+      StorageEncrypted: true
+
+Outputs:
+  DBEndpoint:
+    Value: !GetAtt PrimaryDB.Endpoint.Address
+
