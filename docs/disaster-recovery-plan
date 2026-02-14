@@ -1,0 +1,108 @@
+# Disaster Recovery Plan (DRP)
+
+--- Executive Summary
+
+This Disaster Recovery Plan (DRP) defines the strategy, architecture, and operational procedures for ensuring business continuity of a cloud-hosted web application deployed on Amazon Web Services (AWS). 
+The architecture leverages multi-region high availability, automated DNS failover, cross-region data replication, and infrastructure-as-code automation to minimize downtime and data loss during regional failures.
+
+This plan ensures:
+
+- High availability
+- Automated disaster recovery
+- Minimal operational intervention
+
+--- Business Objectives
+
+### Objectives & Target 
+
+~ Service Availability - 99.99% 
+~ Maximum Downtime (RTO) - ≤ 10 minutes 
+~ Maximum Data Loss (RPO) - ≤ 1 minute 
+~ Recovery Mode - Automated 
+~ Manual Intervention - Minimal 
+
+--- Scope
+
+This plan covers:
+
+- Web application hosted on EC2
+- Database services hosted on Amazon RDS
+- Static and object data hosted on Amazon S3
+- DNS routing and traffic management via Amazon Route 53
+- Infrastructure deployment via AWS CloudFormation
+
+--- Disaster Scenarios
+
+### Scenario ~ Impact ~ Recovery Strategy 
+
+* AWS regional outage ~ Total service loss ~ DNS failover to standby region 
+* Primary database failure ~ Application outage ~ Promote cross-region read replica 
+* EC2 fleet failure ~ Service degradation ~ Auto Scaling group self-healing 
+* Data corruption ~ Data integrity loss ~ Restore from backups 
+* Network outage ~ Traffic disruption ~ Route 53 DNS rerouting 
+
+--- Architecture Overview
+
+### Regions
+
+Role & AWS Region 
+
+- Primary ~ us-east-1 
+- Standby ~ us-west-2 
+
+### Core Services
+
+- Amazon EC2 with Auto Scaling
+- Application Load Balancer (ALB)
+- Amazon RDS with cross-region replication
+- Amazon S3 with cross-region replication
+- Amazon Route 53 with health checks and failover routing
+- AWS CloudFormation for infrastructure automation
+
+--- Recovery Strategy
+
+### DNS Failover
+
+- Route 53 monitors health of the primary Application Load Balancer.
+- If the primary region becomes unhealthy:
+  - DNS records automatically fail over to the standby region.
+  - End users are redirected with no manual intervention.
+
+### Database Recovery
+
+- Primary RDS instance runs in us-east-1.
+- Continuous replication is maintained to a read replica in us-west-2.
+- During disaster:
+  - Replica is promoted to primary.
+  - Application configuration is updated to point to new endpoint.
+
+### Storage Recovery
+
+- S3 Cross-Region Replication synchronizes data continuously.
+- During disaster standby bucket becomes primary data source.
+
+--- Backup Strategy
+
+### Resource ~ Backup Method  
+
+- RDS ~ Automated snapshots  
+- S3 ~ Versioning + CRR 
+- EC2 ~ Infrastructure-as-code rebuild  
+- CloudFormation ~ Template version control  
+
+--- Recovery Metrics
+
+### Recovery Time Objective (RTO)
+
+- Component ~ Recovery Time 
+
+- DNS Failover ~ 1–2 minutes 
+- Database Promotion ~ 3–5 minutes 
+- Total System Recovery ~ ≤ 10 minutes 
+
+### Recovery Point Objective (RPO)
+
+- Component ~ Data Loss 
+
+- RDS Replication ~ < 5 seconds 
+- S3 Replication ~ Near-zero 
