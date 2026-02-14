@@ -1,0 +1,13 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  SourceDBArn:
+    Type: String
+
+Resources:
+  DBReplica:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      SourceDBInstanceIdentifier: !Ref SourceDBArn
+      DBInstanceClass: db.t3.micro
+
