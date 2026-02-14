@@ -1,0 +1,112 @@
+--- Overview
+
+This document provides a technical explanation of the architecture diagram for a multi-region disaster recovery (DR) system deployed on Amazon Web Services (AWS).  
+
+The architecture demonstrates:
+
+- High availability across two AWS regions (`us-east-1` and `us-west-2`)  
+- Automated disaster recovery  
+- Database and storage replication  
+- DNS failover  
+- Infrastructure-as-code orchestration  
+
+The system is designed for RTO ≤ 10 minutes and RPO ≤ 1 minute.
+
+--- Architecture Components
+
+### Route 53 – Global DNS and Failover
+
+~ Function: Handles end-user requests and monitors health of primary region.  
+~ Key Features:
+  - Health checks to monitor primary region endpoints
+  - Failover routing policy: routes traffic to standby region if primary is unhealthy
+~ Purpose: Automates traffic rerouting during disasters, minimizing downtime.
+
+### Primary Region (`us-east-1`)
+
+~ Components:
+
+1. VPC: Isolated network environment with public and private subnets.
+2. Application Load Balancer (ALB):  
+   - Distributes incoming HTTP/HTTPS traffic to multiple EC2 instances  
+   - Health checks ensure requests only reach healthy servers
+3. EC2 Auto Scaling Group:  
+   - Maintains application availability  
+   - Automatically replaces unhealthy instances
+4. RDS Primary Database:  
+   - MySQL database with multi-AZ support  
+   - Automated backups with cross-region replication to standby region
+5. S3 Primary Bucket:  
+   - Stores static content and application data  
+   - Configured with Cross-Region Replication (CRR)
+
+~ Purpose: Handles all production workloads under normal operations.
+
+### Standby Region (`us-west-2`)
+
+~ Components:
+
+1. VPC: Mirrors the primary region’s network design
+2. ALB: Routes requests for DR traffic
+3. EC2 Auto Scaling Group: Warm standby instances ready to serve traffic
+4. RDS Read Replica: Continuously replicates primary database  
+   - Promotable to primary in a disaster
+5. S3 Replica Bucket: Receives real-time replication from primary bucket
+
+~ Purpose: Provides disaster recovery capabilities**, ready to become primary if `us-east-1` fails.
+
+### Cross-Region Data Replication
+
+~ RDS: Asynchronous replication from primary DB → read replica  
+  - Ensures minimal data loss  
+  - Replica can be promoted automatically during failover
+~ S3: Cross-Region Replication (CRR)  
+  - Near real-time replication  
+  - Ensures all critical static data is available in DR region
+
+### Infrastructure Automation
+
+~ AWS CloudFormation:  
+  - Templates for all resources in both regions  
+  - Modular stacks: VPC, Security, ALB, Compute, Database, Storage, DNS  
+  - Ensures identical infrastructure in both regions
+~ Deployment Script: Automates region-specific deployments
+~ Purpose: Guarantees repeatable and auditable infrastructure deployment.
+
+--- Traffic Flow Explanation
+
+1. End-User Request: Hits Route 53  
+2. Primary Region Healthy:  
+   - Traffic routed to `us-east-1` ALB  
+   - ALB distributes to EC2 instances  
+   - EC2 queries RDS primary DB and S3 primary bucket
+3. Primary Region Unhealthy:  
+   - Route 53 health check fails  
+   - DNS automatically fails over to `us-west-2`  
+   - Standby region ALB distributes traffic to warm EC2 instances  
+   - Standby RDS is promoted to primary  
+   - S3 replica bucket serves content  
+
+--- Recovery Metrics
+
+### Metric & Target 
+
+- RTO ≤ 10 minutes 
+- RPO ≤ 1 minute 
+- Availability ~ 99.99% 
+
+--- Security and Network Considerations
+
+- VPC Isolation: Public/private subnets separate traffic  
+- Security Groups: Only allow required inbound/outbound traffic  
+- ALB Security: HTTPS termination with TLS  
+- RDS Encryption: At rest using AWS KMS  
+- S3 Encryption: SSE-KMS with CRR replication  
+
+--- Key Design Principles Demonstrated
+
+- High Availability: Auto Scaling, ALB, multi-AZ RDS  
+- Disaster Recovery: Standby region ready with DNS failover  
+- Data Protection: Backups + cross-region replication  
+- Infrastructure as Code: CloudFormation templates  
+- Automation & Observability: CloudWatch + Route 53 health checks  
