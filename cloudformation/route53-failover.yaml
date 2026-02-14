@@ -13,7 +13,7 @@ Resources:
     Type: AWS::Route53::RecordSet
     Properties:
       HostedZoneId: !Ref HostedZoneId
-      Name: dr.example.com
+      Name: dr.projectx.com
       Type: A
       Failover: PRIMARY
       AliasTarget:
@@ -24,7 +24,7 @@ Resources:
     Type: AWS::Route53::RecordSet
     Properties:
       HostedZoneId: !Ref HostedZoneId
-      Name: dr.example.com
+      Name: dr.projectx.com
       Type: A
       Failover: SECONDARY
       AliasTarget:
