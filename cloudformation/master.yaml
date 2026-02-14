@@ -12,7 +12,7 @@ Resources:
   VPCStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://your-bucket.s3.amazonaws.com/vpc.yaml
+      TemplateURL: https://dr-sheddy.s3.amazonaws.com/vpc.yaml
       Parameters:
         VpcCIDR: !Ref VpcCIDR
 
@@ -20,7 +20,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: VPCStack
     Properties:
-      TemplateURL: https://your-bucket.s3.amazonaws.com/security.yaml
+      TemplateURL: https://dr-sheddy.s3.amazonaws.com/security.yaml
       Parameters:
         VPCId: !GetAtt VPCStack.Outputs.VPCId
 
@@ -28,7 +28,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: SecurityStack
     Properties:
-      TemplateURL: https://your-bucket.s3.amazonaws.com/alb.yaml
+      TemplateURL: https://dr-sheddy.s3.amazonaws.com/alb.yaml
       Parameters:
         Subnet1: !GetAtt VPCStack.Outputs.PublicSubnet1
         Subnet2: !GetAtt VPCStack.Outputs.PublicSubnet2
@@ -38,7 +38,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: ALBStack
     Properties:
-      TemplateURL: https://your-bucket.s3.amazonaws.com/compute.yaml
+      TemplateURL: https://dr-sheddy.s3.amazonaws.com/compute.yaml
       Parameters:
         Subnet1: !GetAtt VPCStack.Outputs.PublicSubnet1
         Subnet2: !GetAtt VPCStack.Outputs.PublicSubnet2
@@ -49,5 +49,5 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: ComputeStack
     Properties:
-      TemplateURL: https://your-bucket.s3.amazonaws.com/rds-primary.yaml
+      TemplateURL: https://dr-sheddy.s3.amazonaws.com/rds-primary.yaml
 
