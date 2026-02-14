@@ -1,0 +1,36 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Security Groups for DR Architecture
+
+Parameters:
+  VPCId:
+    Type: String
+
+Resources:
+  ALBSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ALB Security Group
+      VpcId: !Ref VPCId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  EC2SG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: EC2 Security Group
+      VpcId: !Ref VPCId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref ALBSG
+
+Outputs:
+  ALBSG:
+    Value: !Ref ALBSG
+  EC2SG:
+    Value: !Ref EC2SG
+
