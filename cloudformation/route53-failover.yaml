@@ -1,0 +1,33 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  HostedZoneId:
+    Type: String
+  PrimaryDNS:
+    Type: String
+  SecondaryDNS:
+    Type: String
+
+Resources:
+  PrimaryRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: dr.example.com
+      Type: A
+      Failover: PRIMARY
+      AliasTarget:
+        DNSName: !Ref PrimaryDNS
+        HostedZoneId: Z35SXDOTRQ7X7K
+
+  SecondaryRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: dr.example.com
+      Type: A
+      Failover: SECONDARY
+      AliasTarget:
+        DNSName: !Ref SecondaryDNS
+        HostedZoneId: Z35SXDOTRQ7X7K
+
