@@ -1,0 +1,26 @@
+# DR Test Results
+
+## Scope
+- Project: `drp-683707-20260215b`
+- Primary region: `us-east-1`
+- Secondary region: `us-west-2`
+- Record: `project.dr.internal` (private hosted zone failover)
+
+## Drill Method
+1. Scaled primary ASG to zero (`min=0`, `desired=0`).
+2. Monitored:
+   - Route 53 health check: `96a7a218-7e29-407d-a14d-2a307c55c76d`
+   - Primary ALB HTTP status
+   - Secondary ALB HTTP status
+3. Restored primary ASG to normal (`min=2`, `desired=2`, `max=4`).
+
+## Key Timestamps (UTC)
+- Drill start: `2026-02-15T21:49:16Z`
+- Primary endpoint first down (`503`): `2026-02-15T21:49:37Z`
+- Route 53 health check first unhealthy: `2026-02-15T21:50:52Z`
+- Primary recovery confirmed (`200` + health-check success): `2026-02-15T21:54:14Z`
+
+## Metrics
+- Detection time: `96 seconds`
+- Estimated failover time with TTL (`60s`): `156 seconds` (`2m 36s`)
+- RPO observation: `0 seconds` (`ReplicaLag` metric remained `0`)
