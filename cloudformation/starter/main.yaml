@@ -1,0 +1,146 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Multi-Region DR Starter - Root Stack
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: dr-portfolio
+  RegionRole:
+    Type: String
+    AllowedValues: [PRIMARY, SECONDARY]
+  VpcCidr:
+    Type: String
+    Default: 10.20.0.0/16
+  PublicSubnetACidr:
+    Type: String
+    Default: 10.20.1.0/24
+  PublicSubnetBCidr:
+    Type: String
+    Default: 10.20.2.0/24
+  PrivateSubnetACidr:
+    Type: String
+    Default: 10.20.11.0/24
+  PrivateSubnetBCidr:
+    Type: String
+    Default: 10.20.12.0/24
+  HostedZoneId:
+    Type: String
+    Default: ''
+  RecordName:
+    Type: String
+    Default: dr.example.com
+  PrimaryAlbDnsName:
+    Type: String
+    Default: ''
+  SecondaryAlbDnsName:
+    Type: String
+    Default: ''
+  DBMasterUsername:
+    Type: String
+    Default: admin
+  DBMasterPassword:
+    Type: String
+    NoEcho: true
+    MinLength: 8
+  ModulesBaseUrl:
+    Type: String
+    Description: S3 URL prefix for nested templates, e.g. https://bucket.s3.amazonaws.com/starter/modules
+    Default: https://example-bucket.s3.amazonaws.com/starter/modules
+  SourceDBInstanceArn:
+    Type: String
+    Default: ''
+  SourceDBRegion:
+    Type: String
+    Default: us-east-1
+  ReplicaKmsKeyId:
+    Type: String
+    Default: alias/aws/rds
+  EnableMultiAZ:
+    Type: String
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+
+Resources:
+  NetworkStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub '${ModulesBaseUrl}/network.yaml'
+      Parameters:
+        ProjectName: !Ref ProjectName
+        VpcCidr: !Ref VpcCidr
+        PublicSubnetACidr: !Ref PublicSubnetACidr
+        PublicSubnetBCidr: !Ref PublicSubnetBCidr
+        PrivateSubnetACidr: !Ref PrivateSubnetACidr
+        PrivateSubnetBCidr: !Ref PrivateSubnetBCidr
+
+  SecurityStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: NetworkStack
+    Properties:
+      TemplateURL: !Sub '${ModulesBaseUrl}/security.yaml'
+      Parameters:
+        ProjectName: !Ref ProjectName
+        VpcId: !GetAtt NetworkStack.Outputs.VpcId
+
+  ComputeStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: SecurityStack
+    Properties:
+      TemplateURL: !Sub '${ModulesBaseUrl}/compute.yaml'
+      Parameters:
+        ProjectName: !Ref ProjectName
+        RegionRole: !Ref RegionRole
+        VpcId: !GetAtt NetworkStack.Outputs.VpcId
+        PublicSubnetA: !GetAtt NetworkStack.Outputs.PublicSubnetA
+        PublicSubnetB: !GetAtt NetworkStack.Outputs.PublicSubnetB
+        AppSecurityGroupId: !GetAtt SecurityStack.Outputs.AppSecurityGroupId
+
+  DatabaseStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: SecurityStack
+    Properties:
+      TemplateURL: !Sub '${ModulesBaseUrl}/database.yaml'
+      Parameters:
+        ProjectName: !Ref ProjectName
+        RegionRole: !Ref RegionRole
+        PrivateSubnetA: !GetAtt NetworkStack.Outputs.PrivateSubnetA
+        PrivateSubnetB: !GetAtt NetworkStack.Outputs.PrivateSubnetB
+        DbSecurityGroupId: !GetAtt SecurityStack.Outputs.DbSecurityGroupId
+        DBMasterUsername: !Ref DBMasterUsername
+        DBMasterPassword: !Ref DBMasterPassword
+        SourceDBInstanceArn: !Ref SourceDBInstanceArn
+        SourceDBRegion: !Ref SourceDBRegion
+        ReplicaKmsKeyId: !Ref ReplicaKmsKeyId
+        EnableMultiAZ: !Ref EnableMultiAZ
+
+  StorageStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub '${ModulesBaseUrl}/storage.yaml'
+      Parameters:
+        ProjectName: !Ref ProjectName
+
+  Route53FailoverStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateRoute53Resources
+    Properties:
+      TemplateURL: !Sub '${ModulesBaseUrl}/route53-failover.yaml'
+      Parameters:
+        HostedZoneId: !Ref HostedZoneId
+        RecordName: !Ref RecordName
+        PrimaryAlbDnsName: !Ref PrimaryAlbDnsName
+        SecondaryAlbDnsName: !Ref SecondaryAlbDnsName
+
+Conditions:
+  CreateRoute53Resources: !And
+    - !Not [!Equals [!Ref HostedZoneId, '']]
+    - !Not [!Equals [!Ref PrimaryAlbDnsName, '']]
+    - !Not [!Equals [!Ref SecondaryAlbDnsName, '']]
+
+Outputs:
+  LoadBalancerDnsName:
+    Value: !GetAtt ComputeStack.Outputs.LoadBalancerDnsName
+  AppUrl:
+    Value: !Sub 'http://${ComputeStack.Outputs.LoadBalancerDnsName}'
+  DatabaseEndpoint:
+    Value: !GetAtt DatabaseStack.Outputs.DatabaseEndpoint
