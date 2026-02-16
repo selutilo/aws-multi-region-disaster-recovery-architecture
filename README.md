@@ -7,7 +7,7 @@ The architecture leverages multi-region high availability, automated DNS failove
 - Multi-region high availability
 - Automated disaster recovery
 - Infrastructure-as-code using CloudFormation
-- RTO ≤ 10 minutes, RPO ≤ 1 minute
+- RTO ≤ 15 minutes, RPO < 5 minute
 
 ## Architecture Highlights
 - EC2 + Auto Scaling
