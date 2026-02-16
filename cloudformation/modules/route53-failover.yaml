@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: DR Starter - Route53 Failover with Health Check
+
+Parameters:
+  HostedZoneId:
+    Type: String
+  RecordName:
+    Type: String
+  PrimaryAlbDnsName:
+    Type: String
+  SecondaryAlbDnsName:
+    Type: String
+
+Resources:
+  PrimaryHealthCheck:
+    Type: AWS::Route53::HealthCheck
+    Properties:
+      HealthCheckConfig:
+        Type: HTTP
+        FullyQualifiedDomainName: !Ref PrimaryAlbDnsName
+        ResourcePath: /
+        Port: 80
+        RequestInterval: 30
+        FailureThreshold: 3
+
+  PrimaryRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref RecordName
+      Type: CNAME
+      TTL: 60
+      SetIdentifier: primary-endpoint
+      Failover: PRIMARY
+      HealthCheckId: !Ref PrimaryHealthCheck
+      ResourceRecords:
+        - !Ref PrimaryAlbDnsName
+
+  SecondaryRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref RecordName
+      Type: CNAME
+      TTL: 60
+      SetIdentifier: secondary-endpoint
+      Failover: SECONDARY
+      ResourceRecords:
+        - !Ref SecondaryAlbDnsName
