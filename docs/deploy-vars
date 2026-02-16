@@ -1,0 +1,47 @@
+# Deploy Variables (Live Test Run)
+
+  
+## Core Naming
+- `PROJECT_NAME`: `drp-683707-20260215b`
+- `PRIMARY_STACK`: `drp-683707-20260215b-primary`
+- `SECONDARY_STACK`: `drp-683707-20260215b-secondary`
+- `TEMPLATE_BUCKET`: `cfn-dr-683707058187-20260215`
+- `MODULES_BASE_URL`: `https://cfn-dr-683707058187-20260215.s3.amazonaws.com/starter/modules`
+
+## Route 53 Configuration
+- `HostedZoneId`: `Z03335752Z6TE700WVCCS`
+- `HostedZoneName`: `dr.internal.`
+- `RecordName`: `project.dr.internal`
+- `PrimaryHealthCheckId`: `96a7a218-7e29-407d-a14d-2a307c55c76d`
+
+## Region Parameters
+### Primary (`us-east-1`)
+- `VpcCidr`: `10.22.0.0/16`
+- `PublicSubnetACidr`: `10.22.1.0/24`
+- `PublicSubnetBCidr`: `10.22.2.0/24`
+- `PrivateSubnetACidr`: `10.22.11.0/24`
+- `PrivateSubnetBCidr`: `10.22.12.0/24`
+
+### Secondary (`us-west-2`)
+- `VpcCidr`: `10.23.0.0/16`
+- `PublicSubnetACidr`: `10.23.1.0/24`
+- `PublicSubnetBCidr`: `10.23.2.0/24`
+- `PrivateSubnetACidr`: `10.23.11.0/24`
+- `PrivateSubnetBCidr`: `10.23.12.0/24`
+
+## Database Parameters
+- `DBMasterUsername`: `admin`
+- `DBMasterPassword`: `DrStack2026!`
+- `EnableMultiAZ` (primary stack): `true`
+- `EnableMultiAZ` (secondary stack): `false`
+- `SourceDBInstanceArn`: `arn:aws:rds:us-east-1:683707058187:db:drp-683707-20260215b-primary-db`
+- `SourceDBRegion`: `us-east-1`
+- `ReplicaKmsKeyId`: `alias/aws/rds`
+
+## Deployed Outputs
+- `PRIMARY_ALB_DNS`: `drp-68-AppLo-oTO6rEnFw0ES-45229601.us-east-1.elb.amazonaws.com`
+- `SECONDARY_ALB_DNS`: `drp-68-AppLo-ADiTItCVZ2qz-1241765902.us-west-2.elb.amazonaws.com`
+- `PRIMARY_DB_ENDPOINT`: `drp-683707-20260215b-primary-db.csl6k06m2m5d.us-east-1.rds.amazonaws.com`
+- `SECONDARY_DB_ENDPOINT`: `drp-683707-20260215b-secondary-replica-db.cpiou4uq8lhz.us-west-2.rds.amazonaws.com`
+- `PRIMARY_S3_BUCKET`: `drp-683707-20260215b-us-east-1-683707058187`
+- `SECONDARY_S3_BUCKET`: `drp-683707-20260215b-us-west-2-683707058187`
