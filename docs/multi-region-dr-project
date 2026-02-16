@@ -1,0 +1,39 @@
+# Multi-Region Disaster Recovery Architecture on AWS
+
+## Project Summary
+This project deploys a simple web application in two AWS Regions:
+- Primary Region: `us-east-1`
+- Standby Region: `us-west-2`
+
+It implements automated DNS failover, cross-region data replication, and repeatable infrastructure provisioning via CloudFormation.
+
+## What This Project Demonstrates
+- High availability architecture patterns
+- Disaster recovery planning and testing
+- Multi-region deployment strategy
+- Backup and replication controls
+- Infrastructure as Code (IaC) using nested CloudFormation templates
+
+## AWS Services Used
+- `EC2` and `Auto Scaling` for app compute
+- `Application Load Balancer` for traffic distribution
+- `RDS MySQL` primary + cross-region read replica
+- `Route 53` failover policy and health checks
+- `S3` cross-region replication for static/backup objects
+- `CloudFormation` for modular, repeatable infrastructure
+- `CloudWatch` for health and failover visibility
+
+## Target Architecture
+- VPC in each region with public/private subnets across 2 AZs
+- Web tier in public subnets behind ALB
+- Database tier in private subnets
+- Route 53 record with PRIMARY and SECONDARY endpoints
+- S3 bucket pair with CRR (source in primary, destination in standby)
+- Standby compute set to warm standby (1 instance min) by default
+
+## Security Controls
+- Least-privilege IAM roles for EC2, CloudFormation, and replication
+- DB subnet groups and private subnet isolation
+- Security groups allowing only required app/db ports
+- Encryption at rest (RDS + S3) and in transit (HTTPS)
+- CloudWatch alarms for health check failures and replication lag
