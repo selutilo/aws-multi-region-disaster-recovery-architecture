@@ -1,0 +1,115 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: DR Starter - RDS Primary or Standby
+
+Parameters:
+  ProjectName:
+    Type: String
+  RegionRole:
+    Type: String
+    AllowedValues: [PRIMARY, SECONDARY]
+  PrivateSubnetA:
+    Type: AWS::EC2::Subnet::Id
+  PrivateSubnetB:
+    Type: AWS::EC2::Subnet::Id
+  DbSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+  DBMasterUsername:
+    Type: String
+  DBMasterPassword:
+    Type: String
+    NoEcho: true
+  SourceDBInstanceArn:
+    Type: String
+    Default: ''
+  SourceDBRegion:
+    Type: String
+    Default: us-east-1
+  ReplicaKmsKeyId:
+    Type: String
+    Default: alias/aws/rds
+  EnableMultiAZ:
+    Type: String
+    AllowedValues: ['true', 'false']
+    Default: 'true'
+
+Conditions:
+  IsPrimary: !Equals [!Ref RegionRole, PRIMARY]
+  IsSecondary: !Not [!Condition IsPrimary]
+  UseReplicaSource: !Not [!Equals [!Ref SourceDBInstanceArn, '']]
+  IsSecondaryReplica: !And
+    - !Condition IsSecondary
+    - !Condition UseReplicaSource
+  IsSecondaryStandalone: !And
+    - !Condition IsSecondary
+    - !Not [!Condition UseReplicaSource]
+  EnableMultiAZCondition: !Equals [!Ref EnableMultiAZ, 'true']
+
+Resources:
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnets for RDS
+      SubnetIds:
+        - !Ref PrivateSubnetA
+        - !Ref PrivateSubnetB
+
+  PrimaryDB:
+    Type: AWS::RDS::DBInstance
+    Condition: IsPrimary
+    Properties:
+      DBInstanceIdentifier: !Sub '${ProjectName}-primary-db'
+      Engine: mysql
+      DBInstanceClass: db.t3.micro
+      AllocatedStorage: '20'
+      StorageEncrypted: true
+      BackupRetentionPeriod: 7
+      MultiAZ: !If [EnableMultiAZCondition, true, false]
+      MasterUsername: !Ref DBMasterUsername
+      MasterUserPassword: !Ref DBMasterPassword
+      PubliclyAccessible: false
+      VPCSecurityGroups:
+        - !Ref DbSecurityGroupId
+      DBSubnetGroupName: !Ref DBSubnetGroup
+
+  SecondaryReadReplicaDB:
+    Type: AWS::RDS::DBInstance
+    Condition: IsSecondaryReplica
+    Properties:
+      DBInstanceIdentifier: !Sub '${ProjectName}-secondary-replica-db'
+      Engine: mysql
+      DBInstanceClass: db.t3.micro
+      PubliclyAccessible: false
+      SourceDBInstanceIdentifier: !Ref SourceDBInstanceArn
+      SourceRegion: !Ref SourceDBRegion
+      StorageEncrypted: true
+      KmsKeyId: !Ref ReplicaKmsKeyId
+      VPCSecurityGroups:
+        - !Ref DbSecurityGroupId
+      DBSubnetGroupName: !Ref DBSubnetGroup
+
+  SecondaryStandaloneDB:
+    Type: AWS::RDS::DBInstance
+    Condition: IsSecondaryStandalone
+    Properties:
+      DBInstanceIdentifier: !Sub '${ProjectName}-secondary-standby-db'
+      Engine: mysql
+      DBInstanceClass: db.t3.micro
+      AllocatedStorage: '20'
+      StorageEncrypted: true
+      BackupRetentionPeriod: 7
+      MasterUsername: !Ref DBMasterUsername
+      MasterUserPassword: !Ref DBMasterPassword
+      PubliclyAccessible: false
+      VPCSecurityGroups:
+        - !Ref DbSecurityGroupId
+      DBSubnetGroupName: !Ref DBSubnetGroup
+
+Outputs:
+  DatabaseEndpoint:
+    Value: !If
+      - IsPrimary
+      - !GetAtt PrimaryDB.Endpoint.Address
+      - !If
+        - IsSecondaryReplica
+        - !GetAtt SecondaryReadReplicaDB.Endpoint.Address
+        - !GetAtt SecondaryStandaloneDB.Endpoint.Address
